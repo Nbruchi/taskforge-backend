@@ -1,14 +1,4 @@
-# Software Requirements Specification (SRS) for TaskForge
-
-**Version**: 1.0  
-**Date**: October 07, 2025  
-**Author**: [Your Name], Solo Developer (RCA Alum, TV1 Intern)  
-**Purpose**: Blueprint for production-ready collaborative task app—scalable, secure, AI-enhanced.
-
-## 1. Introduction
-
-### 1.1 Purpose
-
+# TaskForge API
 TaskForge is a real-time collaborative task management app for teams (e.g., devs, farmers co-ops, media crews). It beats basic to-dos (Trello clones) with AI parsing, audit trails, and soft deletes—built for production chaos (e.g., 100 users editing live without crashes). This SRS defines _everything_ to build: Features, logic, UI flows, errors. Goal: Portfolio showcase + scalable SaaS seed (freelance clients pay $10/mo for premium).
 
 **MVP Scope**: Core collab (auth, tasks, real-time) + basics (invites, analytics). No overshoot: Skip payments phase 1.
