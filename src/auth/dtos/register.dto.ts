@@ -1,13 +1,7 @@
 import { IsEmail, IsNotEmpty, MaxLength, MinLength } from "class-validator";
+import { LoginDto } from "./login.dto";
 
-export class RegisterDto {
-  @IsEmail({}, { message: "Invalid email" })
-  email: string;
-
-  @IsNotEmpty()
-  @MinLength(8, { message: "Password must be at least 8 characters" })
-  password: string;
-
+export class RegisterDto extends LoginDto {
   @IsNotEmpty()
   @MinLength(3, { message: "Name must be at least 3 characters" })
   @MaxLength(50, { message: "Name must be at most 50 characters" })

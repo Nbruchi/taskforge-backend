@@ -1,41 +1,55 @@
-import { Module } from "@nestjs/common";
-import { JwtModule } from "@nestjs/jwt";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { JwtModule } from "@nestjs/jwt";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { PassportModule } from "@nestjs/passport"; // For guards/strategies.
-import { AuthService } from "./auth.service";
+import cookieParser from "cookie-parser";
 import { AuthController } from "./auth.controller";
-import { User } from "../entities/user.entity"; // For repo.
-import { AuditLog } from "../entities/audit-log.entity";
-import { RefreshToken } from "../entities/refresh-token.entity";
-import { VerificationToken } from "../entities/verification-token.entity";
-import { JwtStrategy } from "./strategies/jwt.strategy"; // If you have it.
-import { JwtAuthGuard } from "./guards/jwt-auth.guard"; // If you have it.
+import { AuthService } from "./auth.service";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { RefreshTokenGuard } from "./guards/refresh-token.guard";
+import { JwtStrategy } from "./strategies/jwt.strategy";
+import { JwtRefreshStrategy } from "./strategies/jwt-refresh.strategy";
+import { User } from "../entities/user.entity";
+import { MailModule } from "../mail/mail.module";
 
 @Module({
   imports: [
-    ConfigModule, // For ConfigService.
+    TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
+      inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get("JWT_SECRET"),
+        signOptions: {
+          expiresIn: configService.get("JWT_ACCESS_EXPIRATION") || "1h",
+        },
       }),
-      inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([
-      User,
-      AuditLog,
-      RefreshToken,
-      VerificationToken,
-    ]),
-    PassportModule, // For JwtStrategy/guards.
-  ],
-  providers: [
-    AuthService,
-    JwtStrategy, // Add if using guard.
-    JwtAuthGuard, // Add if using guard.
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret:
+          configService.get("JWT_REFRESH_SECRET") || "your-refresh-secret",
+        signOptions: {
+          expiresIn: configService.get("JWT_REFRESH_EXPIRATION") || "7d",
+        },
+      }),
+    }),
+    MailModule,
   ],
   controllers: [AuthController],
-  exports: [AuthService, JwtAuthGuard], // Export for other modules.
+  providers: [
+    AuthService,
+    JwtStrategy,
+    JwtRefreshStrategy,
+    JwtAuthGuard,
+    RefreshTokenGuard,
+  ],
+  exports: [AuthService, JwtAuthGuard, RefreshTokenGuard],
 })
-export class AuthModule {}
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(cookieParser()).forRoutes("*");
+  }
+}

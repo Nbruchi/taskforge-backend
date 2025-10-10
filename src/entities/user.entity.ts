@@ -5,15 +5,11 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
 } from "typeorm";
 import { Task } from "./task.entity";
 import { Workspace } from "./workspace.entity";
 import { Invite } from "./invite.entity";
 import { AuditLog } from "./audit-log.entity";
-import { RefreshToken } from "./refresh-token.entity";
-import { VerificationToken } from "./verification-token.entity";
-
 @Entity("users") // SRS: Table name.
 export class User {
   @PrimaryGeneratedColumn("uuid") // SRS: cuid-like UUID for id.
@@ -49,21 +45,9 @@ export class User {
   @OneToMany(() => AuditLog, (log) => log.user) // SRS: Audit logs.
   auditLogs: AuditLog[];
 
-  @OneToMany(() => RefreshToken, (token) => token.user) // SRS: Refresh tokens.
-  refreshTokens: RefreshToken[];
-
-  @OneToMany(() => VerificationToken, (token) => token.user) // SRS: Verify/reset tokens.
-  verificationTokens: VerificationToken[];
-
   @CreateDateColumn() // SRS: createdAt auto.
   createdAt: Date;
 
   @UpdateDateColumn() // SRS: updatedAt auto.
   updatedAt: Date;
-
-  @DeleteDateColumn() // SRS: Soft delete.
-  deletedAt?: Date;
-
-  @Column({ type: "timestamp", nullable: true }) // SRS: lastLoginAt optional.
-  lastLoginAt?: Date;
 }
