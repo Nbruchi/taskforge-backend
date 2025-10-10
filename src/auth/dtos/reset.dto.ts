@@ -1,8 +1,11 @@
-import { IsString, MinLength, Matches } from "class-validator";
+import { MinLength, Matches, IsEmail, IsString } from "class-validator";
 
 export class ResetDto {
-  @IsString()
-  token: string;
+  @IsEmail({}, { message: "Invalid email" })
+  email: string;
+
+  @IsString({ message: "Reset token must be a valid string" })
+  resetToken: string;
 
   @MinLength(8, { message: "Password must be at least 8 characters" })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,}$/, {

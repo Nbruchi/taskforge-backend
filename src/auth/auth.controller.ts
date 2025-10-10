@@ -1,90 +1,60 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Delete,
-  UsePipes,
-  ValidationPipe,
-  UseGuards,
+import { 
+  Body, 
+  Controller, 
+  HttpCode, 
+  HttpStatus, 
+  Post, 
+  Res, 
   Req,
-  Res,
-  HttpCode,
-  HttpStatus,
+  UseGuards,
+  Get
 } from "@nestjs/common";
+import {type Request, type Response } from 'express';
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dtos/register.dto";
 import { LoginDto } from "./dtos/login.dto";
-import { JwtAuthGuard } from "./guards/jwt-auth.guard"; // Your guard.
-import { Throttle } from "@nestjs/throttler";
-import { type Response, type Request } from "express";
-import { CurrentUser } from "src/decorators/current-user.decorator";
-import { User } from "src/entities/user.entity";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { RefreshTokenGuard } from "./guards/refresh-token.guard";
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // FR-01: POST /auth/signup—validate DTO, call service, set cookies.
-  @Post("signup")
-  @UsePipes(new ValidationPipe({ whitelist: true })) // SRS: Auto 400 on DTO fail.
-  @Throttle({}) // SRS: 5/60s rate limit.
-  async signup(
-    @Body() dto: RegisterDto,
-    @Res({ passthrough: true }) res: Response, // SRS: Set cookies.
-  ) {
-    const result = await this.authService.signup(dto);
-    await this.authService.setAuthCookies(
-      res,
-      result.data.access_token,
-      result.data.refresh_token,
-    );
-    return result; // SRS: Spec response.
+  @Post("register")
+  @HttpCode(HttpStatus.CREATED)
+  async register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 
-  // FR-02: POST /auth/login—similar to signup.
   @Post("login")
-  @UsePipes(new ValidationPipe({ whitelist: true }))
-  @Throttle({})
-  async login(
-    @Body() dto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const result = await this.authService.signin(dto);
-    await this.authService.setAuthCookies(
-      res,
-      result.data.access_token,
-      result.data.refresh_token,
-    );
-    return result;
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
+    const { user } = await this.authService.login(dto, response);
+    return { user }; // Only return user data, tokens are in cookies
   }
 
-  // Extended FR-03: POST /auth/refresh—extract from cookie, call service, rotate cookies.
-  @Post("refresh")
+  @UseGuards(RefreshTokenGuard)
+  @Get("refresh")
   @HttpCode(HttpStatus.OK)
-  @Throttle({}) // SRS: 10/60s.
-  async refresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const refreshToken =
-      req.cookies["refresh_token"] ||
-      req.headers["authorization"]?.replace("Bearer ", "");
-    const result = await this.authService.refresh(refreshToken);
-    await this.authService.setAuthCookies(
-      res,
-      result.data.access_token,
-      result.data.refresh_token,
-    );
-    return result;
+  async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    const refreshToken = request.cookies?.refresh_token;
+    if (!refreshToken) {
+      throw new Error('No refresh token provided');
+    }
+    return this.authService.refreshToken(refreshToken, response);
   }
 
-  // Extended FR-03: DELETE /auth/logout—protected, call service, clear cookies.
-  @Delete("logout")
-  @UseGuards(JwtAuthGuard) // SRS: Protected—extract userId from req.user.sub.
+  @UseGuards(JwtAuthGuard)
+  @Post("logout")
   @HttpCode(HttpStatus.OK)
-  async logout(@CurrentUser() user: User, @Res({ passthrough: true }) res: Response) {
-    const result = await this.authService.logout(user.id);
-    await this.authService.clearAuthCookies(res);
-    return result;
+  async logout(@Res({ passthrough: true }) response: Response) {
+    return this.authService.logout(response);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("me")
+  @HttpCode(HttpStatus.OK)
+  getProfile(@Req() req: any) {
+    return this.authService.getUserProfile(req.user.id);
   }
 }

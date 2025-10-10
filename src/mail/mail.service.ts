@@ -114,7 +114,10 @@ export class MailService {
       });
 
       if (!existingUser) {
-        throw new Error("User not found");
+        return {
+          success: false,
+          message: "User not found",
+        };
       }
 
       if (existingUser && existingUser.isEmailVerified) {

@@ -7,12 +7,10 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import databaseConfig from "./config/database.config";
 import { AuditLog } from "./entities/audit-log.entity";
 import { Invite } from "./entities/invite.entity";
-import { RefreshToken } from "./entities/refresh-token.entity";
 import { Task } from "./entities/task.entity";
 import { User } from "./entities/user.entity";
-import { VerificationToken } from "./entities/verification-token.entity";
 import { Workspace } from "./entities/workspace.entity";
-import { MailModule } from './mail/mail.module';
+import { MailModule } from "./mail/mail.module";
 
 @Module({
   imports: [
@@ -31,15 +29,7 @@ import { MailModule } from './mail/mail.module';
           username: configService.get<string>("database.user"),
           password: configService.get<string>("database.password"),
           database: configService.get<string>("database.name"),
-          entities: [
-            AuditLog,
-            Invite,
-            RefreshToken,
-            Task,
-            User,
-            VerificationToken,
-            Workspace,
-          ],
+          entities: [AuditLog, Invite, Task, User, Workspace],
           synchronize: true,
         };
       },
